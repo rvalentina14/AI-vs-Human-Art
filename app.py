@@ -4,7 +4,7 @@ from tensorflow.keras.models import load_model
 from PIL import Image
 import numpy as np
 import os
-import gdown np
+import gdown
 
 # PAGE CONFIG
 st.set_page_config(

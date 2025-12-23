@@ -14,20 +14,21 @@ st.set_page_config(
 )
 
 # MODEL CONFIG
-model_path = "inceptionv3_aiart_detector_final.h5"
+MODEL_PATH = "model.h5"
 FILE_ID = "12dT7IBR6UjebfBv-v_TE_jhcZp8irH_7"
 
+# DOWNLOAD MODEL
 def download_model():
-    if not os.path.exists(model_path):
-        with st.spinner("Downloading model... (first time only)"):
-            url = f"https://drive.google.com/uc?id={FILE_ID}"
-            gdown.download(url, model_path, quiet=False)
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("Downloading model (first launch only)..."):
+            url = f"https://drive.google.com/uc?export=download&id={FILE_ID}"
+            gdown.download(url, MODEL_PATH, quiet=False)
 
 # LOAD MODEL
 @st.cache_resource
 def load_trained_model():
     download_model()
-    return load_model(model_path)
+    return load_model(MODEL_PATH)
 
 # PREPROCESS IMAGE
 def preprocess_image(image):
@@ -45,35 +46,35 @@ def predict_image(model, image):
 
 # UI
 st.title("🎨 AI vs Human Art Detector")
-st.markdown("This model is powered by InceptionV3, trained to intelligently distinguish between AI-generated and human-created artworks.")
+st.markdown(
+    "Powered by **InceptionV3**, this model intelligently distinguishes "
+    "between **AI-generated** and **human-created** artworks."
+)
 
 with st.sidebar:
-    st.header("⚙️ Model Information")
-    model_path = st.text_input(
-        "Path model (.h5)",
-        value="inceptionv3_aiart_detector_final.h5"
-    )
-
-    st.markdown("---")
+    st.header("ℹ️ How It Works")
     st.markdown("""
-    **Interpretation**
-    Output ∈ [0,1]
-    - > 0.5 → **AI Generated**
-    - < 0.5 → **Human Made**
+    Upload an artwork and let the model analyze it.
+    The output reflects how strongly the image resembles
+    AI-generated or human-created art.
+
+    Scores closer to **1** lean toward AI,
+    while scores closer to **0** lean toward human.
     """)
 
 # LOAD MODEL
 try:
-    model = load_trained_model(model_path)
-    st.success("Model succesfully loaded")
-except:
+    model = load_trained_model()
+    st.success("Model successfully loaded ✅")
+except Exception as e:
     model = None
-    st.error("Model failed to load")
+    st.error("Model failed to load ❌")
+    st.exception(e)
 
 # IMAGE UPLOAD
 if model:
     uploaded_file = st.file_uploader(
-        "Upload your art here!",
+        "Upload your artwork",
         type=["jpg", "jpeg", "png", "webp"]
     )
 
@@ -81,8 +82,8 @@ if model:
         image = Image.open(uploaded_file)
         st.image(image, caption="Input Image", use_container_width=True)
 
-        if st.button("🔍 Detect now", use_container_width=True):
-            with st.spinner("Analyzing..."):
+        if st.button("🔍 Detect Artwork", use_container_width=True):
+            with st.spinner("Analyzing artwork..."):
                 confidence = predict_image(model, image)
 
                 if confidence >= 0.5:
@@ -103,7 +104,6 @@ if model:
                 col1.metric("AI Probability", f"{ai_score:.2%}")
                 col2.metric("Human Probability", f"{human_score:.2%}")
 
-                with st.expander("Technical Detail"):
-                    st.write(f"Output sigmoid: {confidence:.6f}")
-
-                    st.write("Input shape: (224, 224, 3)")
+                with st.expander("Technical Details"):
+                    st.write(f"Sigmoid output: `{confidence:.6f}`")
+                    st.write("Input shape: `(224, 224, 3)`")
